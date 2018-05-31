@@ -3,54 +3,28 @@ package com.example.ios_razrab.googlemapexperiments;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.TextView;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationResult;
+import android.widget.Toast;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
-import java.util.concurrent.TimeUnit;
-
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-import io.reactivex.Scheduler;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Predicate;
-import io.reactivex.schedulers.Schedulers;
-
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
-
-    LocationCallback mLocationCallback;
-
+public class MapsActivity extends FragmentActivity implements
+        OnMapReadyCallback
+{
     private GoogleMap mMap;
-
-    Location location;
 
     static final int MY_PERMISSIONS_FINE_LOCATION =1111;
 
@@ -68,206 +42,171 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         tv_f_lat=(TextView)findViewById(R.id.tv_lat_fine);
         tv_f_long=(TextView)findViewById(R.id.tv_long_fine);
 
-        tv_c_lat .setText("");
-        tv_c_long .setText("");
+        tv_c_lat .setText("0");
+        tv_c_long .setText("0");
         tv_c_status.setText("Определяем приблизительное местоположение..");
-        tv_f_lat .setText("");
-        tv_f_long .setText("");
+        tv_f_lat .setText("0");
+        tv_f_long .setText("0");
         tv_f_status .setText("Определяем точное местоположение..");
+
+
+        if (checkLocationSwithOn()) {
+
+            if (Build.VERSION.SDK_INT >= 23) {
+
+                if (!checkDynamicPerms()) {
+                    callPermissions();
+                } else {
+                    permsGranted();
+                }
+            } else {
+                permsGranted();
+            }
+        }
+    }
+
+
+
+    /**
+     * Когда есть разрешения
+     * */
+    void permsGranted(){
+        Log .i("Разрешено!!","");
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-
-
-
-        createLocationCallback();
-
-
+        getCoarseLocation();
     }
 
 
 
-    private void createLocationCallback() {
-        mLocationCallback = new LocationCallback() {
-            @Override
-            public void onLocationResult(LocationResult locationResult) {
-                super.onLocationResult(locationResult);
 
-                location = locationResult.getLastLocation();
+  /**
+   * Включена ли физически локация на устройстве
+   * */
+    boolean checkLocationSwithOn(){
+        final LocationManager manager = (LocationManager) getSystemService( Context.LOCATION_SERVICE );
 
-                Log.d("testingvalue",String.valueOf(location==null));
-                //mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+        if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+            // Call your Alert message
 
-                Log .d("location","");
+            Toast.makeText(this, "Для определения точного местоположения необходимо включить локацию на устройстве!", Toast.LENGTH_SHORT).show();
 
-//                notifyDataSetChanged();
-            }
-        };
+            return false;
+        } else {
+
+            return true;
+        }
     }
 
 
 
 
     /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
+     Коллбек вызывается когда карта готова к использованию
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-
-
-        checkLocation();
         mMap .setMyLocationEnabled(true);
 
-// Here, thisActivity is the current activity
+        // Check if we were successful in obtaining the map.
+        if (mMap != null) {
 
-        if (Build.VERSION.SDK_INT >= 23) {
+            mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
 
-            checkDynamicPerms();
+                /**
+                 * Колбек вызывается и при включении гео и при смене местоположения
+                 * */
+                @Override
+                public void onMyLocationChange(Location arg0) {
+                    // TODO Auto-generated method stub
 
-        } else {
-            checkDynamicPerms();
+                    LatLng myFineCurrentLocation = new LatLng(arg0.getLatitude() ,arg0 .getLongitude());
+
+                    tv_f_status .setText("Точная локация определена!");
+                    tv_f_lat .setText(String .valueOf(myFineCurrentLocation .latitude));
+                    tv_f_long .setText(String .valueOf(myFineCurrentLocation .longitude));
+
+                    mMap.addMarker(new MarkerOptions().position(myFineCurrentLocation).title("It's Me!"));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(myFineCurrentLocation));
+                    mMap .animateCamera(CameraUpdateFactory.zoomTo(13), 700, null);
+                }
+            });
         }
     }
 
-
-
-
-
-    /**
-     * Если версия 6 или более,
-     * запрашиваем динамические разрешения
-     * */
-    private void checkDynamicPerms(){
-
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            // Permission is not granted
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-            } else {
-                // No explanation needed; request the permission
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_FINE_LOCATION);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-        } else {
-            getCoarseLocation();
-            // Permission has already been granted
-        }
-
-    }
-
-
-
-
-
-    void checkLocation() {
-   // сделал обновление точной пока каждые 2 секунды, но можно любое конечно
-      Disposable disposable = Observable .just( "") .delay(2000, TimeUnit .MILLISECONDS) .repeat().subscribeOn(Schedulers .newThread())
-                .observeOn(AndroidSchedulers .mainThread())
-                .subscribe(new Consumer<String>(){
-                    @Override
-              public void accept(String s ) throws Exception {
-
-                        try{
-                             Location location = mMap .getMyLocation();
-                             zoomMapTo(new LatLng( location .getLatitude(), location .getLongitude()), 12 );
-                            tv_f_status .setText("Точная локация определена!");
-                        }catch (Exception e){
-                            tv_f_status .setText("Точная локация пока не определена");
-                        }
-             }
-                     });
-                 }
-
-
-
-
-
-
-    /**
-     * Наводит камеру на местоположение
-     * @param latLng геоточка на которую нужно навести зум
-     * */
-    void zoomMapTo(LatLng latLng, float zoom){
-
-        mMap.moveCamera(CameraUpdateFactory.newLatLng( latLng ));
-        mMap .animateCamera(CameraUpdateFactory.zoomTo(zoom), 700, null);
-
-        tv_f_lat .setText(String .valueOf(latLng .latitude));
-        tv_f_long .setText(String .valueOf(latLng .longitude));
-
-
-    }
 
 
 
 
 
     public void getCoarseLocation(){
-        // Get the location manager
-        LocationManager locationManager = (LocationManager)
-                getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        String bestProvider = locationManager.getBestProvider(criteria, false);
-        // получение приблизительной
-        Location location = locationManager.getLastKnownLocation(bestProvider);
 
+        String locationProvider = LocationManager.NETWORK_PROVIDER;
+// Or use LocationManager.GPS_PROVIDER
+
+        // Acquire a reference to the system Location Manager
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        // получение приблизительной
+        // ССЫЛКА НА ОФИЦ ДОКУМЕНТАЦИЮ, ГДЕ ГОВОРЯТ ДЕЛАТЬ ИМЕННО ТАК!:
+        // https://developer.android.com/guide/topics/location/strategies#BestPerformance
+        Location location = locationManager.getLastKnownLocation(locationProvider);
 
         try {
             tv_c_lat .setText("Долгота: "+ String .valueOf(location.getLatitude()));
             tv_c_long .setText("Широта: "+ String .valueOf(location.getLongitude()));
 
-            Log.d( "Прибл шир и долг:"
-                    , String .valueOf( location.getLatitude()) + "" +
-                            " " + String .valueOf(location .getLongitude()));
+            tv_c_status .setText("Приблизительное местоположение обнаружено");
 
-            tv_c_status .setText("Приблизительное местоположение обнаружено." +
-                    " Перемещаем фокус на него:");
-
-            zoomMapTo(new LatLng(location .getLatitude(), location .getLongitude()), 12f);
-
-            // lat = location.getLatitude();
-            // lon = location.getLongitude();
         } catch (NullPointerException e) {
+
+            Log .e("Ошибка приблизительн: ",e .toString());
+
             //  lat = -1.0;
             // lon = -1.0;
            tv_c_status .setText("Приблизительное местоположение обнаружить не удалось. " +
-                   "Возможно, вам следует включить геолокацию на устройстве");
+                   "Возможно, Вам следует включить геолокацию на устройстве");
             Log .d("Проблемы с гео: %s", e.toString());
             // Вероятно у пользователя отключена геолокация
 
         }
-
     }
 
 
 
+
+    // region permissions -------------------------------------------
+
+    /**
+     * Если версия 6 или более,
+     * запрашиваем динамические разрешения
+     * */
+    private boolean checkDynamicPerms(){
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+
+
+    void callPermissions(){
+        // если нет разрешения еще то запрашиваем
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                MY_PERMISSIONS_FINE_LOCATION);
+    }
 
 
 
@@ -281,9 +220,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
-                    getCoarseLocation();
+                    permsGranted();
 
                 } else {
+
+                    Toast.makeText(this, "Пользователь не дал разрешения",
+                            Toast.LENGTH_SHORT).show();
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
@@ -294,5 +236,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // permissions this app might request.
         }
     }
+
+    // endregion permissions ------------------------------------------
 
 }
