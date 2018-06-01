@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
+import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -13,12 +14,20 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.util.List;
 
 
 public class MapsActivity extends FragmentActivity implements
@@ -30,10 +39,18 @@ public class MapsActivity extends FragmentActivity implements
 
     TextView tv_c_lat, tv_c_long, tv_c_status,  tv_f_lat, tv_f_long, tv_f_status;
 
+   // на смену deprecated
+    FusedLocationProviderClient mFusedLocationClient;
+    LocationRequest mLocationRequest;
+    LocationCallback mLocationCallback;
+    Location mLastLocation;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         tv_c_lat=(TextView)findViewById(R.id.tv_lat_coarse);
         tv_c_long=(TextView)findViewById(R.id.tv_long_coarse);
@@ -67,6 +84,7 @@ public class MapsActivity extends FragmentActivity implements
 
 
 
+
     /**
      * Когда есть разрешения
      * */
@@ -78,7 +96,32 @@ public class MapsActivity extends FragmentActivity implements
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        getCoarseLocation();
+       getCoarseLocation();
+
+       mLocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+
+                List<Location> locationList = locationResult.getLocations();
+                if (locationList.size() > 0) {
+                    //The last location in the list is the newest
+                    Location location = locationList.get(locationList.size() - 1);
+                    Log.i("MapsActivity", "Location: " + location.getLatitude() + " " + location.getLongitude());
+                    mLastLocation = location;
+
+                    LatLng latLng = new LatLng(location .getLatitude(), location .getLongitude());
+
+                    tv_f_status .setText("Точная локация определена!");
+                    tv_f_lat .setText(String .valueOf(latLng .latitude));
+                    tv_f_long .setText(String .valueOf(latLng .longitude));
+
+                    mMap.addMarker(new MarkerOptions().position(latLng).title("It's Me!"));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                    mMap .animateCamera(CameraUpdateFactory.zoomTo(13), 700, null);
+
+                    }
+            }
+        };
     }
 
 
@@ -93,7 +136,8 @@ public class MapsActivity extends FragmentActivity implements
         if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
             // Call your Alert message
 
-            Toast.makeText(this, "Для определения точного местоположения необходимо включить локацию на устройстве!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Для определения точного местоположения необходимо включить геолокацию на устройстве!"
+                    , Toast.LENGTH_SHORT).show();
 
             return false;
         } else {
@@ -112,35 +156,16 @@ public class MapsActivity extends FragmentActivity implements
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+
         mMap .setMyLocationEnabled(true);
 
-        // Check if we were successful in obtaining the map.
-        if (mMap != null) {
-
-            mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-
-                /**
-                 * Колбек вызывается и при включении гео и при смене местоположения
-                 * */
-                @Override
-                public void onMyLocationChange(Location arg0) {
-                    // TODO Auto-generated method stub
-
-                    LatLng myFineCurrentLocation = new LatLng(arg0.getLatitude() ,arg0 .getLongitude());
-
-                    tv_f_status .setText("Точная локация определена!");
-                    tv_f_lat .setText(String .valueOf(myFineCurrentLocation .latitude));
-                    tv_f_long .setText(String .valueOf(myFineCurrentLocation .longitude));
-
-                    mMap.addMarker(new MarkerOptions().position(myFineCurrentLocation).title("It's Me!"));
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(myFineCurrentLocation));
-                    mMap .animateCamera(CameraUpdateFactory.zoomTo(13), 700, null);
-                }
-            });
-        }
     }
-
-
 
 
 
@@ -177,6 +202,7 @@ public class MapsActivity extends FragmentActivity implements
 
         }
     }
+
 
 
 
