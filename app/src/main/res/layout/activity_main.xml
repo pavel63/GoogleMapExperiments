@@ -4,42 +4,50 @@
     android:layout_height="match_parent">
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_status_coarse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_head_coarse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_lat_coarse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_long_coarse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_head_fine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_status_fine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_lat_fine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <TextView
+        android:gravity="center"
         android:id="@+id/tv_long_fine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
