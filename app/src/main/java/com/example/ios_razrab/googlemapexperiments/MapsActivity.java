@@ -1,7 +1,10 @@
 package com.example.ios_razrab.googlemapexperiments;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -29,6 +32,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.List;
 
+import static android.location.GpsStatus.GPS_EVENT_STARTED;
+import static android.location.GpsStatus.GPS_EVENT_STOPPED;
+
 
 public class MapsActivity extends FragmentActivity implements
         OnMapReadyCallback
@@ -44,6 +50,8 @@ public class MapsActivity extends FragmentActivity implements
     LocationRequest mLocationRequest;
     LocationCallback mLocationCallback;
     Location mLastLocation;
+
+    private BroadcastReceiver mGpsSwitchStateReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +92,6 @@ public class MapsActivity extends FragmentActivity implements
 
 
 
-
     /**
      * Когда есть разрешения
      * */
@@ -95,6 +102,7 @@ public class MapsActivity extends FragmentActivity implements
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
 
        getCoarseLocation();
 
@@ -141,6 +149,22 @@ public class MapsActivity extends FragmentActivity implements
 
             tv_f_status .setText("Точная локация недоступна!");
             tv_c_status.setText("Приблизительное положение недоступно!");
+
+            /**
+             */  // и ставим слушателя если включит локацию
+           mGpsSwitchStateReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+
+                    if (intent.getAction().matches("android.location.PROVIDERS_CHANGED")) {
+                        // Make an action or refresh an already managed state.
+                        permsGranted();
+                    }
+                }
+            };
+
+            registerReceiver(mGpsSwitchStateReceiver, new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION));
+
 
             return false;
         } else {
