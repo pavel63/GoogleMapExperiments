@@ -139,6 +139,9 @@ public class MapsActivity extends FragmentActivity implements
             Toast.makeText(this, "Для определения точного местоположения необходимо включить геолокацию на устройстве!"
                     , Toast.LENGTH_SHORT).show();
 
+            tv_f_status .setText("Точная локация недоступна!");
+            tv_c_status.setText("Приблизительное положение недоступно!");
+
             return false;
         } else {
 
