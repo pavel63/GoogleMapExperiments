@@ -16,7 +16,6 @@ import android.support.v4.app.FragmentActivity
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.widget.Toast
-import com.example.ios_razrab.googlemapexperiments.R.id.*
 
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -30,6 +29,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_main.*
+
 
 class MainActivity : FragmentActivity(), OnMapReadyCallback {
     private var mMap: GoogleMap? = null
